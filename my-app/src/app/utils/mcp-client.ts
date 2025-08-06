@@ -12,6 +12,31 @@ export interface McpClientOptions {
   onClose?: () => void;
 }
 
+interface ToolSchema {
+  type?: string;
+  properties?: Record<string, ToolSchema>;
+  required?: string[];
+  [key: string]: unknown;
+}
+
+interface RawTool {
+  name: string;
+  description?: string;
+  inputSchema?: ToolSchema;
+}
+
+interface RawToolsResult {
+  tools?: RawTool[];
+}
+
+interface MCPToolSchema {
+  parameters?: {
+    properties?: Record<string, unknown>;
+    required?: string[];
+    jsonSchema?: Record<string, unknown>;
+  };
+}
+
 /**
  * McpClient - A Model Context Protocol client implementation
  *
@@ -120,7 +145,7 @@ export class MCPClient implements MCPClientInterface {
       }
 
       // Fetch raw tools data
-      const rawToolsResult = await this.client.listTools();
+      const rawToolsResult = await this.client.listTools() as unknown;
 
       // Transform to the expected format
       const toolsMap: Record<string, MCPTool> = {};
@@ -129,25 +154,27 @@ export class MCPClient implements MCPClientInterface {
         // If the result has a 'tools' property with an array of tools
         if (
           typeof rawToolsResult === "object" &&
+          rawToolsResult !== null &&
           "tools" in rawToolsResult &&
-          Array.isArray(rawToolsResult.tools)
+          Array.isArray((rawToolsResult as RawToolsResult).tools)
         ) {
-          rawToolsResult.tools.forEach((tool: any) => {
-            if (tool && typeof tool === "object" && "name" in tool) {
+          (rawToolsResult as RawToolsResult).tools?.forEach((tool: unknown) => {
+            const typedTool = tool as RawTool;
+            if (typedTool && typeof typedTool === "object" && "name" in typedTool) {
               // Extract required parameters if available
               let requiredParams: string[] = [];
 
               if (
-                tool.inputSchema &&
-                typeof tool.inputSchema === "object" &&
-                "required" in tool.inputSchema &&
-                Array.isArray(tool.inputSchema.required)
+                typedTool.inputSchema &&
+                typeof typedTool.inputSchema === "object" &&
+                "required" in typedTool.inputSchema &&
+                Array.isArray(typedTool.inputSchema.required)
               ) {
-                requiredParams = tool.inputSchema.required;
+                requiredParams = typedTool.inputSchema.required;
               }
 
               // Enhanced description with parameter requirements if available
-              let enhancedDescription = tool.description || "";
+              let enhancedDescription = typedTool.description || "";
 
               // Add parameter information to the description
               if (requiredParams.length > 0) {
@@ -158,18 +185,24 @@ export class MCPClient implements MCPClientInterface {
 
               // Add example structure if we can derive it from schema
               const exampleInput = this.deriveExampleInput(
-                tool.inputSchema,
-                tool.name
+                typedTool.inputSchema,
+                typedTool.name
               );
               if (exampleInput) {
                 enhancedDescription += `\nExample usage: ${exampleInput}`;
               }
 
-              toolsMap[tool.name] = {
+              toolsMap[typedTool.name] = {
                 description: enhancedDescription,
-                schema: tool.inputSchema || {},
+                schema: {
+                  parameters: {
+                    properties: typedTool.inputSchema?.properties || {},
+                    required: typedTool.inputSchema?.required || [],
+                    jsonSchema: typedTool.inputSchema || {}
+                  }
+                } as MCPToolSchema,
                 execute: async (args: Record<string, unknown>) => {
-                  return this.callTool(tool.name, args);
+                  return this.callTool(typedTool.name, args);
                 },
               };
             }
@@ -177,22 +210,23 @@ export class MCPClient implements MCPClientInterface {
         }
         // If the result is an array directly
         else if (Array.isArray(rawToolsResult)) {
-          rawToolsResult.forEach((tool: any) => {
-            if (tool && typeof tool === "object" && "name" in tool) {
+          rawToolsResult.forEach((tool: unknown) => {
+            const typedTool = tool as RawTool;
+            if (typedTool && typeof typedTool === "object" && "name" in typedTool) {
               // Extract required parameters if available
               let requiredParams: string[] = [];
 
               if (
-                tool.inputSchema &&
-                typeof tool.inputSchema === "object" &&
-                "required" in tool.inputSchema &&
-                Array.isArray(tool.inputSchema.required)
+                typedTool.inputSchema &&
+                typeof typedTool.inputSchema === "object" &&
+                "required" in typedTool.inputSchema &&
+                Array.isArray(typedTool.inputSchema.required)
               ) {
-                requiredParams = tool.inputSchema.required;
+                requiredParams = typedTool.inputSchema.required;
               }
 
               // Enhanced description with parameter requirements if available
-              let enhancedDescription = tool.description || "";
+              let enhancedDescription = typedTool.description || "";
 
               // Add parameter information to the description
               if (requiredParams.length > 0) {
@@ -203,18 +237,24 @@ export class MCPClient implements MCPClientInterface {
 
               // Add example structure if we can derive it from schema
               const exampleInput = this.deriveExampleInput(
-                tool.inputSchema,
-                tool.name
+                typedTool.inputSchema,
+                typedTool.name
               );
               if (exampleInput) {
                 enhancedDescription += `\nExample usage: ${exampleInput}`;
               }
 
-              toolsMap[tool.name] = {
+              toolsMap[typedTool.name] = {
                 description: enhancedDescription,
-                schema: tool.inputSchema || {},
+                schema: {
+                  parameters: {
+                    properties: typedTool.inputSchema?.properties || {},
+                    required: typedTool.inputSchema?.required || [],
+                    jsonSchema: typedTool.inputSchema || {}
+                  }
+                } as MCPToolSchema,
                 execute: async (args: Record<string, unknown>) => {
-                  return this.callTool(tool.name, args);
+                  return this.callTool(typedTool.name, args);
                 },
               };
             }
@@ -269,7 +309,7 @@ export class MCPClient implements MCPClientInterface {
   public async callTool(
     name: string,
     args: Record<string, unknown>
-  ): Promise<any> {
+  ): Promise<unknown> {
     try {
       console.log(
         `Calling tool: ${name} with args:`,
@@ -337,7 +377,7 @@ export class MCPClient implements MCPClientInterface {
         try {
           const parsedValue = JSON.parse(value);
           result[key] = parsedValue;
-        } catch (e) {
+        } catch {
           // Not valid JSON, keep as string
           result[key] = value;
         }
@@ -367,7 +407,7 @@ export class MCPClient implements MCPClientInterface {
    * This helps the LLM understand how to format requests properly
    */
   private deriveExampleInput(
-    inputSchema: any,
+    inputSchema: ToolSchema | undefined,
     toolName: string
   ): string | null {
     if (!inputSchema) return null;
@@ -380,7 +420,7 @@ export class MCPClient implements MCPClientInterface {
 
       if (inputSchema.type === "object" && inputSchema.properties) {
         // Build a minimal example object
-        const example: Record<string, any> = {};
+        const example: Record<string, unknown> = {};
         const props = inputSchema.properties;
 
         // Add required properties first
@@ -415,8 +455,8 @@ export class MCPClient implements MCPClientInterface {
   /**
    * Creates an example object from an object schema
    */
-  private createExampleObject(schema: any): Record<string, any> {
-    const result: Record<string, any> = {};
+  private createExampleObject(schema: ToolSchema): Record<string, unknown> {
+    const result: Record<string, unknown> = {};
 
     if (schema.type !== "object" || !schema.properties) {
       return result;
