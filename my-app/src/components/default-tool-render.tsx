@@ -5,8 +5,14 @@ import * as React from "react";
 interface ToolCallProps {
   status: "complete" | "inProgress" | "executing";
   name?: string;
-  args?: any;
-  result?: any;
+  args?: Record<string, unknown>;
+  result?: unknown;
+}
+
+interface ChevronClasses {
+  base: string;
+  open: string;
+  hover: string;
 }
 
 export function DefaultToolRender({status, name = "", args, result}: ToolCallProps) {
@@ -41,12 +47,14 @@ export function DefaultToolRender({status, name = "", args, result}: ToolCallPro
     executing: "bg-blue-500 shadow-blue-500/40"
   };
 
-  // Simplified format function
-  const format = (content: any): React.ReactNode => {
-    if (!content) return null;
-    return typeof content === "object" 
-      ? <span>{JSON.stringify(content, null, 2)}</span>
-      : <span>{String(content)}</span>;
+  // Format function that returns a string for rendering
+  const formatContent = (content: unknown): string => {
+    if (!content) return "";
+    if (typeof content === "string") return content;
+    if (typeof content === "object") {
+      return JSON.stringify(content, null, 2);
+    }
+    return String(content);
   };
 
   const getStatusColor = () => {
@@ -54,6 +62,9 @@ export function DefaultToolRender({status, name = "", args, result}: ToolCallPro
     const shadowColor = statusColors[status].split(' ')[1];
     return `${baseColor} ${(status === "inProgress" || status === "executing") ? "animate-pulse" : ""} shadow-[0_0_10px] ${shadowColor}`;
   };
+
+  // Format result outside of JSX to ensure it's a string
+  const formattedResult = result ? formatContent(result) : "";
 
   return (
     <div className={classes.container}>
@@ -79,23 +90,23 @@ export function DefaultToolRender({status, name = "", args, result}: ToolCallPro
           {args && (
             <div className={classes.section}>
               <div className={classes.sectionTitle}>Parameters</div>
-              <pre className={classes.codeBlock}>{format(args)}</pre>
+              <pre className={classes.codeBlock}>{formatContent(args)}</pre>
             </div>
           )}
 
-          {status === "complete" && result && (
+          {status === "complete" && result ? (
             <div className={classes.section}>
               <div className={classes.sectionTitle}>Result</div>
-              <pre className={classes.codeBlock}>{format(result)}</pre>
+              <pre className={classes.codeBlock}>{formattedResult}</pre>
             </div>
-          )}
+          ) : null}
         </div>
       </div>
     </div>
   );
 }
 
-const ChevronRight = ({ isOpen, chevronClasses }: { isOpen: boolean; chevronClasses: any }) => {
+const ChevronRight = ({ isOpen, chevronClasses }: { isOpen: boolean; chevronClasses: ChevronClasses }) => {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={`${chevronClasses.base} ${isOpen ? chevronClasses.open : ''} ${chevronClasses.hover}`} stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="9 18 15 12 9 6"></polyline>
