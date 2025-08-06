@@ -1,0 +1,5 @@
+httpx
+mcp-server
+starlette
+uvicorn
+python-dotenv
