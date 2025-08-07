@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Weather & GitHub Assistant",
-  description: "AI assistant with weather and GitHub data access",
+  title: "MCP Client",
+  description: "A client for the MCP server like Claude using CopilotKit",
   manifest: "/manifest.json",
   icons: {
     icon: [

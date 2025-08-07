@@ -17,8 +17,8 @@ export default function Home() {
         clickOutsideToClose={false}
         defaultOpen={true}
         labels={{
-          title: "Weather & GitHub Assistant",
-          initial: "👋 Hi! I'm your AI assistant with access to weather data, GitHub information, and Indian Rail data.\n\n**Available tools:**\n- Weather alerts and forecasts (US)\n- GitHub user and repository information\n- Indian Rail train schedules\n\nTry asking me:\n- 'What's the weather forecast for New York?'\n- 'Show me repositories for microsoft'\n- 'Get train schedule for train 12345'\n\nWhat can I help you with?"
+          title: "MCP Client",
+          initial: "👋 Hi! I'm a MCP client like Claude Desktop and Cursor, I can assist you by calling MCP tools available.\n\n**Available tools:**\n- Weather alerts and forecasts (US)\n- GitHub user and repository information\n- Indian Rail train schedules\n\nTry asking me:\n- 'What's the weather forecast for New York?'\n- 'Show me repositories for microsoft'\n- 'Get train schedule for train 12345'\n\nWhat can I help you with?"
         }}
       />
     </main>
@@ -72,8 +72,8 @@ function YourMainContent() {
       className={classes.wrapper}
     >
       <div className={classes.container}>
-        <h1 className="text-4xl font-bold text-white mb-2 text-center">Weather & GitHub Assistant</h1>
-        <p className="text-gray-200 text-center">Your AI assistant with access to weather data and GitHub information.</p>
+        <h1 className="text-4xl font-bold text-white mb-2 text-center">MCP Client</h1>
+        <p className="text-gray-200 text-center">Your AI assistant with access to MCP tools present in the MCP server.</p>
         <hr className="border-white/20 my-6" />
 
         <div className="flex flex-col gap-6">

@@ -1,7 +1,7 @@
 {
-  "name": "Weather & GitHub Assistant",
-  "short_name": "Weather Assistant",
-  "description": "AI assistant with weather data, GitHub information, and Indian Rail tools",
+  "name": "MCP Client",
+  "short_name": "MCP Client",
+  "description": "A client for the MCP server like Claude using CopilotKit to call MCP tools",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#6366f1",
